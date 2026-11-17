@@ -58,6 +58,8 @@
   }
   header.top h1{ font-size:23px; margin:0 0 3px; font-weight:600; }
   header.top .sub{ font-size:12.5px; opacity:.8; letter-spacing:.01em; }
+  header.top .sub:not(:empty){ margin-top:4px; font-size:13.5px; font-weight:600; color:#A58BFF; opacity:1; letter-spacing:.02em; }
+  @media (min-width: 980px){ header.top .sub:not(:empty){ display:none; } }
   .menu-btn{
     position:absolute; top:22px; right:20px; width:34px; height:34px;
     background:rgba(255,255,255,0.12); border:none; border-radius:9px;
@@ -207,7 +209,9 @@
   .store-list{ display:flex; flex-direction:column; gap:8px; }
   .store-row{ display:flex; align-items:center; gap:10px; background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
   .store-row-name{ flex:1; min-width:0; font-size:14px; font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .store-remove{ background:none; border:none; color:var(--fail); font-family:'Manrope',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer; padding:4px 2px; }
+  .store-remove{ background:none; border:none; color:var(--fail); cursor:pointer; width:34px; height:34px; padding:0; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
+  .store-remove:active{ background:rgba(239,68,68,0.12); }
+  .store-remove svg{ width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   .btn-logout{ background:var(--fail); color:#fff; margin-top:6px; padding:13px 16px; box-shadow:0 2px 8px rgba(192,57,43,0.28); }
   .btn-logout:active{ background:#9E2E22; }
 
@@ -454,9 +458,22 @@
   .pw-wrap{ position:relative; }
   .pw-wrap input{ padding-right:66px !important; }
   .pw-toggle{
-    position:absolute; right:4px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--primary);
-    font-family:'Manrope',sans-serif; font-weight:600; font-size:12.5px; padding:10px; cursor:pointer;
+    position:absolute; right:4px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--ink-soft);
+    width:44px; height:44px; padding:0; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
   }
+  .pw-toggle svg{ width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .pw-wrap input{ padding-right:52px !important; }
+  /* collapsible Change Password card */
+  .pw-card-head{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; background:none; border:none; padding:0;
+    font-family:'Manrope',sans-serif; font-size:17px; font-weight:800; color:var(--ink); cursor:pointer; text-align:left;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .pw-card-head svg{ width:20px; height:20px; stroke:var(--ink-soft); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; transition:transform .2s ease; flex-shrink:0; }
+  .pw-card.open .pw-card-head svg{ transform:rotate(180deg); }
+  .pw-card-body{ display:none; margin-top:6px; }
+  .pw-card.open .pw-card-body{ display:block; }
 
   /* iPhone Safari zooms into any box whose text is under 16px, so keep every form control at 16px */
   input, select, textarea,
@@ -725,6 +742,31 @@
     nav.steps{ top:calc(8px + env(safe-area-inset-top,0px)); }
     main{ padding-left:calc(14px + env(safe-area-inset-left,0px)); padding-right:calc(14px + env(safe-area-inset-right,0px)); }
   }
+
+  /* ================= Phone: keep purple header fixed + tabs under it ================= */
+  .cat-tabs{ touch-action:pan-x pan-y; overscroll-behavior-x:contain; }
+  @media (max-width:979px){
+    header.top{ position:sticky; top:0; z-index:29; }
+    body::before{
+      content:''; position:fixed; top:0; left:0; right:0; height:var(--hdr-h,0px);
+      background:var(--bg); z-index:28; pointer-events:none;
+    }
+    nav.steps{ top:calc(var(--hdr-h,0px) - 6px); }
+    .cat-tabs{ top:calc(var(--hdr-h,0px) - 2px); }
+    /* login screen: header scrolls away so there is room above the keyboard */
+    body.logged-out header.top{ position:relative; }
+    body.logged-out::before{ display:none; }
+  }
+  /* keyboard open: add scroll room so the focused field can be brought into view */
+  body.kb-open{ padding-bottom:calc(max(var(--kb,0px), 300px) + 60px) !important; }
+  /* ================= Dark mode: readable purple text on dark purple ================= */
+  body.dark .photo-act{ background:#2F2A75; color:#E4DAFF; }
+  body.dark .photo-act.remove{ background:transparent; color:#FF8A8A; }
+  body.dark .btn-ghost, body.dark .chip-btn, body.dark .seg-btn.on{ color:#E4DAFF; }
+  body.dark .chip-btn:not(.filled){ background:#2F2A75; }
+  body.dark .weight-chip, body.dark .ck-weight{ background:#2F2A75; color:#E4DAFF; }
+  body.dark .tp-preview, body.dark .tp-opt.sel, body.dark .score-tier-btn.selected .tier-value{ color:#E4DAFF; }
+  body.dark .stepper button{ background:#2F2A75; color:#fff; }
   .sticky-cta{ padding-bottom:calc(10px + env(safe-area-inset-bottom,0px)); }
   body{ padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)); }
   .modal-sheet{ padding-bottom:calc(22px + env(safe-area-inset-bottom,0px)); }
@@ -927,6 +969,8 @@ function visitSummaryHTML(editable, src){
   if(editable) chips.push('<button class="visit-edit" onclick="goStep(\'visit\')">Edit</button>');
   return chips.length ? '<div class="visit-chips">' + chips.join('') + '</div>' : '';
 }
+const ICON_EYE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const ICON_EYE_OFF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.9 17.9A10.4 10.4 0 0 1 12 19C5.6 19 2 12 2 12a18 18 0 0 1 4.1-5.1M9.9 5.2A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a18 18 0 0 1-2.2 3.2"/><path d="M14.1 14.1a3 3 0 1 1-4.2-4.2"/><path d="M3 3l18 18"/></svg>';
 const ICON_X = '<svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 function pageEnter(){
   const c = document.getElementById('content');
@@ -953,6 +997,10 @@ function setTheme(t){
    editing and reopen it in your browser.
    ================================================================ */
 const MANAGER_LOGIN = { username: 'Admin', password: '1234' };
+const ADMIN_PW_KEY = 'qc_audit_app_admin_pw_v1';
+const ADMIN_USER_KEY = 'qc_audit_app_admin_user_v1';
+try{ const savedPw = localStorage.getItem(ADMIN_PW_KEY); if(savedPw) MANAGER_LOGIN.password = savedPw; }catch(err){}
+try{ const savedUser = localStorage.getItem(ADMIN_USER_KEY); if(savedUser) MANAGER_LOGIN.username = savedUser; }catch(err){}
 
 let currentRole = 'Quality Controller';
 let loggedInUser = null; // { type:'manager', name, username } | { type:'auditor', accountId, name, username }
@@ -1225,6 +1273,82 @@ function clearSession(){
   try{ localStorage.removeItem(SESSION_STORAGE_KEY); }catch(err){}
 }
 
+function saveAccountDetails(){
+  const msg = document.getElementById('acMsg');
+  const say = (t, ok) => { if(msg){ msg.textContent = t; msg.style.color = ok ? 'var(--pass)' : 'var(--fail)'; } };
+  if(!loggedInUser) return;
+  const name = document.getElementById('acName').value.trim();
+  const user = document.getElementById('acUser').value.trim();
+  if(!name){ say('Please enter your name.', false); return; }
+  if(!user){ say('Please enter a username.', false); return; }
+  if(/\s/.test(user)){ say('Username cannot contain spaces.', false); return; }
+  const isAdmin = loggedInUser.type === 'manager';
+  const acct = isAdmin ? null : auditorAccounts.find(a=>a.id === loggedInUser.accountId);
+  if(!isAdmin && !acct){ say('Account not found.', false); return; }
+  const lower = user.toLowerCase();
+  const takenByOther = auditorAccounts.some(a=> (isAdmin || a.id !== acct.id) && (a.username||'').toLowerCase() === lower);
+  const takenByAdmin = !isAdmin && MANAGER_LOGIN.username.toLowerCase() === lower;
+  if(takenByOther || takenByAdmin){ say('That username is already taken.', false); return; }
+  const oldUser = loggedInUser.username || '';
+  if(isAdmin){
+    adminProfile.name = name; saveAdminProfile();
+    MANAGER_LOGIN.username = user;
+    try{ localStorage.setItem(ADMIN_USER_KEY, user); }catch(err){}
+  } else {
+    acct.name = name; acct.username = user;
+    saveAccountsToStorage();
+    loggedInUser.name = name;
+  }
+  loggedInUser.username = user;
+  auditInfo.auditor = name;
+  saveSession();
+  try{
+    const r = getRemembered();
+    if(r && r.u.toLowerCase() === oldUser.toLowerCase()) localStorage.setItem(REMEMBER_KEY, JSON.stringify({ u: user, p: r.p }));
+  }catch(err){}
+  const ini = document.getElementById('profileInitial'); if(ini) ini.textContent = (name.charAt(0) || '?').toUpperCase();
+  say('Saved.', true);
+}
+function changeMyPassword(){
+  const cur = document.getElementById('cpCurrent').value;
+  const nw = document.getElementById('cpNew').value;
+  const cf = document.getElementById('cpConfirm').value;
+  const msg = document.getElementById('cpMsg');
+  const say = (t, ok) => { if(msg){ msg.textContent = t; msg.style.color = ok ? 'var(--pass)' : 'var(--fail)'; } };
+  if(!loggedInUser) return;
+  const isAdmin = loggedInUser.type === 'manager';
+  const acct = isAdmin ? null : auditorAccounts.find(a=>a.id === loggedInUser.accountId);
+  const realPw = isAdmin ? MANAGER_LOGIN.password : (acct ? acct.password : null);
+  if(realPw === null){ say('Account not found.', false); return; }
+  if(cur !== realPw){ say('Current password is incorrect.', false); return; }
+  if(nw.length < 4){ say('New password must be at least 4 characters.', false); return; }
+  if(nw !== cf){ say('New passwords do not match.', false); return; }
+  if(nw === cur){ say('New password must be different.', false); return; }
+  if(isAdmin){
+    MANAGER_LOGIN.password = nw;
+    try{ localStorage.setItem(ADMIN_PW_KEY, nw); }catch(err){}
+  } else {
+    acct.password = nw;
+    saveAccountsToStorage();
+  }
+  try{
+    const r = getRemembered();
+    if(r && r.u.toLowerCase() === (loggedInUser.username || '').toLowerCase()) localStorage.setItem(REMEMBER_KEY, JSON.stringify({ u: r.u, p: nw }));
+  }catch(err){}
+  ['cpCurrent','cpNew','cpConfirm'].forEach(id=>{ const el = document.getElementById(id); if(el) el.value = ''; });
+  say('Password changed.', true);
+}
+
+const REMEMBER_KEY = 'qc_audit_app_remember_v1';
+function getRemembered(){
+  try{ const r = JSON.parse(localStorage.getItem(REMEMBER_KEY) || 'null'); if(r && r.u) return r; }catch(err){}
+  return null;
+}
+function applyRemember(username, pass){
+  try{
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ u: username, p: pass }));
+  }catch(err){}
+}
 function attemptLogin(){
   const username = document.getElementById('acctUsername').value.trim();
   const pass = document.getElementById('acctPassword').value;
@@ -1233,7 +1357,7 @@ function attemptLogin(){
     loggedInUser = { type:'manager', name:'Admin', username: MANAGER_LOGIN.username };
     currentRole = 'Admin';
     auditInfo.auditor = adminProfile.name || 'Admin';
-    saveSession();
+    saveSession(); applyRemember(username, pass);
     step = 'profile'; previousStep = 'profile'; activeStoreId = null;
     render(); pageEnter(); return;
   }
@@ -1242,7 +1366,7 @@ function attemptLogin(){
     loggedInUser = { type:'auditor', accountId:acct.id, name:acct.name, username:acct.username };
     currentRole = 'Quality Controller';
     auditInfo.auditor = acct.name;
-    saveSession();
+    saveSession(); applyRemember(username, pass);
     step = 'profile'; previousStep = 'profile'; activeStoreId = null;
     render(); pageEnter(); return;
   }
@@ -1426,6 +1550,7 @@ let checklist = starterChecklist();
 let step = 'profile'; // profile | edit | manage | visit | audit | report | review | settings
 let previousStep = 'profile';
 function toggleSettings(){
+  settingsView = null;
   if(step === 'settings'){
     step = previousStep || 'profile';
   } else {
@@ -1797,7 +1922,7 @@ function renderNav(){
     `<button class="${activeKey===key?'active':''}" onclick="goStep('${key}')">${label}</button>`
   ).join('');
   const sub = document.getElementById('headerSub');
-  sub.textContent = '';
+  sub.textContent = 'Track. Score. Improve.';
 }
 function goStep(key){ step = key; if(key === 'profile') activeStoreId = null; if(key === 'manage') manageView = null; render(); pageEnter(); window.scrollTo({top:0, behavior:'smooth'}); }
 
@@ -1808,11 +1933,17 @@ function togglePw(inputId, btn){
   if(!el) return;
   const show = el.type === 'password';
   el.type = show ? 'text' : 'password';
-  btn.textContent = show ? 'Hide' : 'Show';
+  btn.innerHTML = show ? ICON_EYE_OFF : ICON_EYE;
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+}
+function togglePwCard(){
+  const card = document.getElementById('pwCard');
+  if(card) card.classList.toggle('open');
 }
 function renderLogin(){
   const iconEl = (typeof document.querySelector === 'function') ? document.querySelector('link[rel="apple-touch-icon"]') : null;
   const iconSrc = iconEl ? iconEl.href : '';
+  const rem = getRemembered();
   return `
   <div style="display:flex; align-items:center; justify-content:center; padding:18px 0 8px;">
     <div class="card login-card" style="width:100%; max-width:400px;">
@@ -1821,13 +1952,13 @@ function renderLogin(){
       <p class="helper">Enter your username and password.</p>
       <div class="field">
         <label>Username</label>
-        <input type="text" id="acctUsername" placeholder="Username" autocapitalize="none" autocorrect="off" autocomplete="username" onkeydown="if(event.key==='Enter'){document.getElementById('acctPassword').focus();}">
+        <input type="text" id="acctUsername" value="${rem ? esc(rem.u) : ''}" placeholder="Username" autocapitalize="none" autocorrect="off" autocomplete="username" onkeydown="if(event.key==='Enter'){document.getElementById('acctPassword').focus();}">
       </div>
       <div class="field" style="margin-top:12px;">
         <label>Password</label>
         <div class="pw-wrap">
-          <input type="password" id="acctPassword" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){attemptLogin();}">
-          <button type="button" class="pw-toggle" onclick="togglePw('acctPassword', this)">Show</button>
+          <input type="password" id="acctPassword" value="${rem ? esc(rem.p) : ''}" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter'){attemptLogin();}">
+          <button type="button" class="pw-toggle" onclick="togglePw('acctPassword', this)" aria-label="Show password">${ICON_EYE}</button>
         </div>
       </div>
       <div class="btn-row"><button class="btn btn-primary btn-block" onclick="attemptLogin()">Sign In</button></div>
@@ -2364,7 +2495,7 @@ function renderManage(){
     ${stores.length ? `<div class="store-list">${stores.map(s=>`
       <div class="store-row">
         <span class="store-row-name">${esc(s.name)}</span>
-        <button class="store-remove" onclick="removeStore('${s.id}')">Remove</button>
+        <button class="store-remove" aria-label="Remove store" onclick="removeStore('${s.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg></button>
       </div>`).join('')}</div>` : `<p class="empty" style="padding:8px 0;">No stores added yet.</p>`}
   </div>
 
@@ -2401,14 +2532,25 @@ function renderManage(){
 }
 
 /* ---------------- RENDER: SETTINGS ---------------- */
+let settingsView = null;   // null = Settings menu | 'account'
+function setSettingsView(v){ settingsView = v; render(); pageEnter(); window.scrollTo({top:0, behavior:'smooth'}); }
+function settingsHead(title){
+  return `<div class="store-head">
+    <button class="back-chip" onclick="setSettingsView(null)" aria-label="Back to Settings"><svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <h2 class="store-title">${title}</h2>
+  </div>`;
+}
 function renderSettings(){
   const p = currentProfile();
   const initial = ((p.name || '?').trim().charAt(0) || '?').toUpperCase();
-  return `
-  <h2 class="settings-page-title">Settings</h2>
+  const meAcct = (!isManager() && loggedInUser) ? auditorAccounts.find(x=>x.id === loggedInUser.accountId) : null;
+  const meName = isManager() ? (adminProfile.name || 'Admin') : (meAcct ? meAcct.name : '');
+  const meUser = isManager() ? MANAGER_LOGIN.username : (meAcct ? meAcct.username : '');
+  if(settingsView === 'account') return `
+  ${settingsHead('Account Setting')}
 
   <div class="card">
-    <h2 class="section-title">Profile Picture</h2>
+    <h2 class="section-title">Account</h2>
     <div class="settings-photo-row">
       <div class="settings-avatar-wrap">
         <div class="profile-avatar settings-avatar">${p.photo ? `<img src="${p.photo}" alt="">` : `<span id="profileInitial">${esc(initial)}</span>`}</div>
@@ -2426,9 +2568,57 @@ function renderSettings(){
         ${p.photo ? `<button class="photo-act remove" onclick="removeProfilePhoto()">Remove Photo</button>` : ''}
       </div>
     </div>
+    <div class="field" style="margin-top:18px;">
+      <label>Name</label>
+      <input type="text" id="acName" value="${esc(meName)}" placeholder="Full name" autocomplete="off">
+    </div>
+    <div class="field" style="margin-top:10px;">
+      <label>Username</label>
+      <input type="text" id="acUser" value="${esc(meUser)}" placeholder="Username" autocapitalize="none" autocorrect="off" autocomplete="off">
+    </div>
+    <p id="acMsg" class="helper" style="margin:10px 0 0; text-align:center; font-weight:600;"></p>
+    <div class="btn-row" style="margin-top:10px;"><button class="btn btn-primary btn-block" onclick="saveAccountDetails()">Save</button></div>
   </div>
 
   <div class="card">
+    <h2 class="section-title">Change Password</h2>
+      <div class="field" style="margin-top:10px;">
+        <label>Current password</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpCurrent" placeholder="Current password" autocomplete="current-password" autocapitalize="none">
+          <button type="button" class="pw-toggle" onclick="togglePw('cpCurrent', this)" aria-label="Show password">${ICON_EYE}</button>
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>New password</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpNew" placeholder="New password" autocomplete="new-password" autocapitalize="none">
+          <button type="button" class="pw-toggle" onclick="togglePw('cpNew', this)" aria-label="Show password">${ICON_EYE}</button>
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Confirm new password</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpConfirm" placeholder="Confirm new password" autocomplete="new-password" autocapitalize="none">
+          <button type="button" class="pw-toggle" onclick="togglePw('cpConfirm', this)" aria-label="Show password">${ICON_EYE}</button>
+        </div>
+      </div>
+      <p id="cpMsg" class="helper" style="margin:10px 0 0; text-align:center; font-weight:600;"></p>
+      <div class="btn-row" style="margin-top:10px;"><button class="btn btn-primary btn-block" onclick="changeMyPassword()">Save New Password</button></div>
+  </div>
+`;
+  return `
+  <h2 class="settings-page-title">Settings</h2>
+
+  <div class="manage-menu" style="padding-top:0;">
+    <button class="manage-tile" onclick="setSettingsView('account')">
+      <span class="manage-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg></span>
+      <span class="manage-text"><span class="manage-title">Account Setting</span></span>
+      <span class="user-row-chevron">›</span>
+    </button>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
     <h2 class="section-title">Theme</h2>
     <div class="btn-row">
       <button class="btn ${theme==='light' ? 'btn-primary' : 'btn-outline'} btn-sm" onclick="setTheme('light')">Light Mode</button>
@@ -2573,7 +2763,9 @@ function setAuditCat(id){
   if(tab && tab.scrollIntoView) tab.scrollIntoView({ inline:'center', block:'nearest' });
   const panel = document.querySelector('.cat-panel');
   if(panel){
-    const y = panel.getBoundingClientRect().top + (window.pageYOffset || 0) - 80;
+    const hh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--hdr-h')) || 0;
+    const tb = document.querySelector('.cat-tabs');
+    const y = panel.getBoundingClientRect().top + (window.pageYOffset || 0) - (hh + (tb ? tb.offsetHeight : 0) + 8);
     if(y < (window.pageYOffset || 0)) window.scrollTo({ top: Math.max(0, y), behavior:'smooth' });
   }
 }
@@ -3195,12 +3387,13 @@ function render(){
   const content = document.getElementById('content');
   const sub = document.getElementById('headerSub');
   const menuBtn = document.getElementById('menuBtn');
+  document.body.classList.toggle('logged-out', !loggedInUser);
 
   if(!loggedInUser){
     const t0 = document.getElementById('headerTitle'); if(t0) t0.textContent = 'Audit'; const c0 = document.getElementById('hdrComplete'); if(c0) c0.style.display = 'none';
     nav.style.display = '';
     nav.innerHTML = '';
-    sub.textContent = '';
+    sub.textContent = 'Track. Score. Improve.';
     content.innerHTML = renderLogin();
     if(menuBtn) menuBtn.style.display = 'none';
     return;
@@ -3364,7 +3557,7 @@ loadSession();
   }, {passive:false});
 
   // stop the page from stretching past the top/bottom (that is the big empty gap)
-  var startY = 0;
+  var startY = 0, startX = 0;
   function scroller(el){
     while(el && el !== document.body && el !== document.documentElement){
       var cs = getComputedStyle(el);
@@ -3373,10 +3566,12 @@ loadSession();
     }
     return null;
   }
-  document.addEventListener('touchstart', function(e){ if(e.touches.length === 1) startY = e.touches[0].clientY; }, {passive:true});
+  document.addEventListener('touchstart', function(e){ if(e.touches.length === 1){ startY = e.touches[0].clientY; startX = e.touches[0].clientX; } }, {passive:true});
   document.addEventListener('touchmove', function(e){
     if(e.touches.length !== 1) return;
     var dy = e.touches[0].clientY - startY;          // >0 finger moving down (pulling top)
+    var dx = e.touches[0].clientX - startX;
+    if(Math.abs(dx) > Math.abs(dy)) return;          // sideways swipe (tab rows) - let it scroll
     var sc = scroller(e.target);
     if(sc){
       var atTop = sc.scrollTop <= 0, atBottom = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 1;
@@ -3388,6 +3583,48 @@ loadSession();
     var maxY = de.scrollHeight - window.innerHeight;
     if((dy > 0 && y <= 0) || (dy < 0 && y >= maxY - 1)) e.preventDefault();
   }, {passive:false});
+})();
+</script>
+<script>
+/* Keep --hdr-h in sync with the fixed purple header so sticky bars sit right under it */
+(function(){
+  var h = document.querySelector('header.top'); if(!h) return;
+  function set(){ document.documentElement.style.setProperty('--hdr-h', h.offsetHeight + 'px'); }
+  set();
+  window.addEventListener('resize', set);
+  window.addEventListener('orientationchange', set);
+  window.addEventListener('load', set);
+  if(window.ResizeObserver) new ResizeObserver(set).observe(h);
+})();
+</script>
+<script>
+/* Keyboard: keep the page scrollable and bring the tapped field into view */
+(function(){
+  var vv = window.visualViewport;
+  var FIELD = /^(INPUT|TEXTAREA|SELECT)$/;
+  function apply(){
+    var kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
+    document.documentElement.style.setProperty('--kb', kb + 'px');
+  }
+  if(vv){ vv.addEventListener('resize', apply); vv.addEventListener('scroll', apply); }
+  document.addEventListener('focusin', function(e){
+    var t = e.target;
+    if(!t || !FIELD.test(t.tagName) || t.type === 'checkbox' || t.type === 'radio' || t.type === 'range') return;
+    document.body.classList.add('kb-open');
+    setTimeout(function(){
+      apply();
+      try{ t.scrollIntoView({ block:'center', behavior:'smooth' }); }catch(err){}
+    }, 320);
+  });
+  document.addEventListener('focusout', function(){
+    setTimeout(function(){
+      var a = document.activeElement;
+      if(!a || !FIELD.test(a.tagName)){
+        document.body.classList.remove('kb-open');
+        document.documentElement.style.setProperty('--kb', '0px');
+      }
+    }, 150);
+  });
 })();
 </script>
 </body>
