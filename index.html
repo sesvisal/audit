@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="theme-color" content="#12143A">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Audit</title>
 <meta name="apple-mobile-web-app-title" content="Audit">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,6 +16,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
+  /* hide scrollbars everywhere (scrolling still works) */
+  *{ scrollbar-width:none; -ms-overflow-style:none; }
+  *::-webkit-scrollbar{ display:none; width:0; height:0; }
   :root{
     --bg:#F6F5FF;
     --surface:#FFFFFF;
@@ -62,8 +65,97 @@
     cursor:pointer; padding:0;
   }
   .menu-btn span{ display:block; width:16px; height:2px; background:#fff; border-radius:2px; }
+  .menu-btn svg{ width:18px; height:18px; display:block; stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   .settings-back{ background:none; border:none; color:var(--primary); font-family:'Manrope',sans-serif; font-weight:600; font-size:13.5px; cursor:pointer; padding:0; margin-bottom:10px; }
   .settings-page-title{ font-family:'Manrope',sans-serif; font-size:19px; font-weight:700; margin:0 0 14px; color:var(--ink); }
+  /* Manage menu */
+  .manage-menu{ display:flex; flex-direction:column; gap:14px; padding-top:6px; }
+  .manage-tile{
+    display:flex; align-items:center; gap:16px; width:100%; text-align:left;
+    background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:20px 18px;
+    box-shadow:0 4px 16px rgba(109,58,240,0.08);
+    cursor:pointer; font-family:'Manrope',sans-serif; color:var(--ink);
+    -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent;
+  }
+  .manage-tile:active{ background:var(--primary-tint); }
+  .manage-ico{
+    width:52px; height:52px; border-radius:16px; flex-shrink:0;
+    background:var(--primary-tint); color:var(--primary);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .manage-ico svg{ width:26px; height:26px; }
+  .manage-text{ flex:1; min-width:0; }
+  .manage-title{ display:block; font-size:16.5px; font-weight:700; }
+  .manage-sub{ display:block; font-size:12.5px; color:var(--ink-soft); margin-top:4px; font-weight:500; }
+  /* Audit category tabs */
+  .cat-tabs{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:6;
+    display:flex; gap:10px; overflow-x:auto; padding:10px 2px 12px; margin-bottom:6px;
+    background:var(--bg); -webkit-overflow-scrolling:touch;
+  }
+  .cat-tab{
+    flex:0 0 auto; display:flex; align-items:center; gap:8px; white-space:nowrap;
+    padding:11px 16px; border-radius:16px; background:var(--surface); border:1px solid var(--border);
+    color:var(--ink-soft); font-family:'Manrope',sans-serif; font-weight:700; font-size:13.5px; cursor:pointer;
+    box-shadow:0 2px 8px rgba(60,30,150,0.06); -webkit-tap-highlight-color:transparent;
+  }
+  .cat-tab .tab-count{ font-size:11.5px; font-weight:700; opacity:.7; }
+  .cat-tab.done:not(.active){ color:var(--pass); }
+  .cat-tab.has-missing:not(.active){ color:var(--fail); border-color:var(--fail); }
+  .cat-tab.active{ background:linear-gradient(135deg,#EC4899,#8B5CF6); border-color:transparent; color:#fff; box-shadow:0 6px 16px rgba(139,92,246,0.3); }
+  .cat-tab.active .tab-count{ opacity:.85; }
+  .cat-count{ font-weight:600; color:var(--ink-soft); font-size:13px; }
+  .subcat.solo{ margin-top:4px; padding-top:0; border-top:none; }
+  /* Time picker */
+  .time-field{
+    display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; height:46px; padding:0 14px;
+    border:1px solid var(--border); border-radius:12px; background:var(--surface); color:var(--ink);
+    font-family:'Manrope',sans-serif; font-size:15px; font-weight:700; cursor:pointer; text-align:left;
+    -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent;
+  }
+  .time-field.empty{ color:var(--ink-soft); font-weight:600; }
+  .time-field svg{ width:20px; height:20px; stroke:var(--primary); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .time-field:active{ background:var(--primary-tint); }
+  .tp-head{ display:flex; align-items:center; justify-content:space-between; }
+  .tp-clear{ background:none; border:none; color:var(--fail); font-family:'Manrope',sans-serif; font-weight:700; font-size:13.5px; cursor:pointer; padding:6px 2px; }
+  .tp-preview{ text-align:center; font-family:'Manrope',sans-serif; font-size:34px; font-weight:800; color:var(--primary-dark); letter-spacing:-0.02em; margin:6px 0 2px; }
+  body.dark .tp-preview{ color:#D3C6FF; }
+  .tp-wheels{ position:relative; display:flex; gap:4px; height:220px; margin:8px 0 14px; }
+  .tp-wheels::before{ content:""; position:absolute; left:0; right:0; top:88px; height:44px; border-radius:14px; background:var(--primary-tint); pointer-events:none; }
+  .tp-col{
+    position:relative; flex:1; overflow-y:auto; scroll-snap-type:y mandatory; -webkit-overflow-scrolling:touch;
+    -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 32%, #000 68%, transparent 100%);
+            mask-image:linear-gradient(to bottom, transparent 0, #000 32%, #000 68%, transparent 100%);
+  }
+  .tp-sp{ display:block; height:88px; }
+  .tp-opt{ height:44px; display:flex; align-items:center; justify-content:center; scroll-snap-align:center; font-family:'Manrope',sans-serif; font-size:20px; font-weight:600; color:var(--ink-soft); cursor:pointer; }
+  .tp-opt.sel{ color:var(--primary-dark); font-weight:800; font-size:22px; }
+  body.dark .tp-opt.sel{ color:#D3C6FF; }
+  .tp-actions{ display:flex; gap:10px; }
+  .tp-actions .btn{ flex:1; }
+  /* Date picker */
+  .dp-nav{ display:flex; align-items:center; justify-content:space-between; margin:4px 0 12px; }
+  .dp-month{ font-family:'Manrope',sans-serif; font-weight:800; font-size:17px; color:var(--ink); }
+  .dp-arrow{ width:38px; height:38px; border-radius:12px; border:1px solid var(--border); background:var(--surface); color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
+  .dp-arrow svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .dp-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; margin-bottom:14px; }
+  .dp-dow{ font-family:'Manrope',sans-serif; font-size:12px; font-weight:700; color:var(--ink-soft); padding:6px 0; }
+  .dp-day{ height:42px; border-radius:13px; border:none; background:none; font-family:'Manrope',sans-serif; font-size:15px; font-weight:600; color:var(--ink); cursor:pointer; padding:0; -webkit-tap-highlight-color:transparent; }
+  .dp-day.out{ color:var(--ink-soft); opacity:.45; }
+  .dp-day.today{ box-shadow:inset 0 0 0 1.5px var(--primary); }
+  .dp-day.sel{ background:var(--primary); color:#fff; opacity:1; box-shadow:0 4px 12px rgba(109,58,240,0.35); }
+  /* Header while auditing: < Store name ........ Complete */
+  .hdr-row{ display:flex; align-items:center; gap:10px; padding-right:46px; }
+  .hdr-row h1{ flex:1; min-width:0; display:flex; align-items:center; gap:6px; }
+  .hdr-back{ flex:0 0 auto; width:30px; height:30px; margin-left:-6px; border:none; background:none; color:inherit; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .hdr-back svg{ width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+  .hdr-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hdr-complete{
+    flex:0 0 auto; border:none; border-radius:12px; padding:9px 16px; cursor:pointer;
+    font-family:'Manrope',sans-serif; font-weight:700; font-size:13.5px; color:#fff;
+    background:linear-gradient(135deg,#EC4899,#8B5CF6); box-shadow:0 4px 12px rgba(139,92,246,0.35);
+    -webkit-tap-highlight-color:transparent;
+  }
   .user-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
   .user-row{
     display:flex; align-items:center; gap:12px; width:100%; text-align:left;
@@ -93,9 +185,24 @@
   .profile-name{ font-family:'Manrope',sans-serif; font-size:19px; font-weight:700; color:var(--ink); }
   .profile-position{ font-size:13px; color:var(--ink-soft); margin-top:3px; }
   .profile-actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
-  .settings-photo-row{ display:flex; align-items:center; gap:16px; }
-  .settings-avatar{ width:76px; height:76px; font-size:30px; margin:0; flex-shrink:0; }
-  .settings-photo-actions{ display:flex; flex-wrap:wrap; gap:8px; }
+  .settings-photo-row{ display:flex; flex-direction:column; align-items:center; gap:18px; padding:6px 0 2px; }
+  .settings-avatar-wrap{ position:relative; width:112px; height:112px; }
+  .settings-avatar{ width:112px; height:112px; font-size:44px; margin:0; flex-shrink:0; box-shadow:0 0 0 4px var(--surface), 0 0 0 6px var(--primary-tint), 0 8px 22px rgba(109,58,240,0.28); }
+  .avatar-badge{
+    position:absolute; right:-2px; bottom:-2px; width:36px; height:36px; border-radius:50%;
+    background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center;
+    border:3px solid var(--surface); cursor:pointer; box-shadow:0 3px 10px rgba(109,58,240,0.35);
+  }
+  .avatar-badge svg{ width:17px; height:17px; stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .settings-photo-actions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; }
+  .photo-act{
+    display:flex; align-items:center; justify-content:center; gap:8px; padding:13px 10px; border-radius:14px;
+    background:var(--primary-tint); color:var(--primary-dark); font-family:'Manrope',sans-serif; font-weight:700; font-size:13.5px;
+    cursor:pointer; border:none; -webkit-tap-highlight-color:transparent;
+  }
+  .photo-act svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .photo-act:active{ transform:scale(.97); }
+  .photo-act.remove{ grid-column:1 / -1; background:transparent; color:var(--fail); font-weight:600; padding:6px; font-size:13px; }
   .add-store-row{ display:flex; gap:8px; align-items:flex-end; margin-bottom:12px; }
   .store-list{ display:flex; flex-direction:column; gap:8px; }
   .store-row{ display:flex; align-items:center; gap:10px; background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
@@ -141,7 +248,7 @@
     font-family:'Manrope',sans-serif; font-weight:600; font-size:13.5px;
     transition:background .12s ease, opacity .12s ease;
   }
-  .btn-primary{ background:var(--primary); color:#fff; box-shadow:0 2px 8px rgba(109,58,240,0.32); }
+  .btn-primary{ background:var(--primary); color:#fff; box-shadow:0 4px 12px rgba(139,92,246,0.35); }
   .btn-primary:active{ background:var(--primary-dark); }
   .btn-ghost{ background:var(--primary-tint); color:var(--primary-dark); }
   .btn-outline{ background:transparent; border:1px solid var(--border); color:var(--ink-soft); }
@@ -399,18 +506,20 @@
   .btn-audit:active{ background:#C73082; transform:scale(.985); }
   .title-note{ font-weight:500; color:var(--ink-soft); font-size:12.5px; }
   .info-tiles{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .info-tile{ background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px 8px; text-align:center; }
-  .info-tile-label{ font-size:11px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
-  .info-tile-value{ font-family:'Manrope',sans-serif; font-size:26px; font-weight:700; color:var(--ink); margin-top:6px; line-height:1.1; }
-  .info-tile-sub{ font-size:12.5px; font-weight:600; margin-top:4px; }
+  .info-tile{ background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px 8px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:6px; min-height:0; }
+  .info-tile-label{ font-size:11px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:.08em; line-height:1; }
+  .info-tile-value{ font-family:'Manrope',sans-serif; font-size:15px; font-weight:700; color:var(--ink); margin:0; line-height:1.3; min-height:0; white-space:nowrap; display:flex; align-items:center; justify-content:center; }
+  .info-tile-sub{ font-size:13px; font-weight:600; margin:0; line-height:1.2; }
   .report-list{ display:flex; flex-direction:column; }
-  .report-row{ display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--border); }
+  .report-row{ display:flex; align-items:center; gap:14px; padding:16px 0; border-bottom:1px solid var(--border); }
   .report-row:last-child{ border-bottom:none; padding-bottom:2px; }
   .report-row:first-child{ padding-top:2px; }
-  .report-main{ flex:1; min-width:0; }
-  .report-date{ font-size:13.5px; font-weight:600; color:var(--ink); }
-  .report-sep{ color:var(--ink-soft); font-weight:400; }
-  .report-meta{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .report-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+  .report-date{ font-size:14.5px; font-weight:700; color:var(--ink); line-height:1.3; }
+  .report-sub{ font-size:13px; font-weight:600; color:var(--ink-soft); line-height:1.3; }
+  .report-sep{ color:var(--ink-soft); font-weight:400; margin:0 3px; }
+  .report-meta{ font-size:12px; color:var(--ink-soft); margin-top:0; line-height:1.35; }
+  .report-meta.first{ margin-top:5px; }
   .report-badge{ flex-shrink:0; min-width:66px; text-align:center; padding:11px 10px; border-radius:12px; font-family:'Manrope',sans-serif; font-weight:700; font-size:16px; }
 
   /* ---------- Visit information ---------- */
@@ -437,7 +546,7 @@
   }
   .visit-edit{
     display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:20px; border:1px solid transparent;
-    background:linear-gradient(135deg,#7C4DFF,#5B2FE0); color:#fff; font-family:'Manrope',sans-serif;
+    background:linear-gradient(135deg,#EC4899,#8B5CF6); color:#fff; font-family:'Manrope',sans-serif;
     font-size:12px; font-weight:600; line-height:normal; cursor:pointer;
   }
   body.dark .visit-edit{ color:#fff; }
@@ -531,7 +640,7 @@
     box-shadow:0 8px 22px rgba(18,20,58,0.30);
   }
   nav.steps button{ color:#A9A6D6; border-radius:12px; font-weight:600; padding:10px 6px; }
-  nav.steps button.active{ color:#fff; background:linear-gradient(135deg,#7C4DFF,#5B2FE0); box-shadow:0 4px 12px rgba(109,58,240,0.45); }
+  nav.steps button.active{ color:#fff; background:linear-gradient(135deg,#EC4899,#8B5CF6); box-shadow:0 4px 12px rgba(139,92,246,0.35); }
 
   main{ padding-top:22px; }
   .card{
@@ -542,12 +651,12 @@
   .field input[type=password], .field textarea, .field select, .ck-input{ border-radius:12px; border-color:var(--border); }
 
   .btn{ border-radius:12px; font-weight:700; }
-  .btn-primary{ background:linear-gradient(135deg,#7C4DFF,#5B2FE0); }
-  .btn-primary:active{ background:linear-gradient(135deg,#6D3AF0,#4B24C9); }
+  .btn-primary{ background:linear-gradient(135deg,#EC4899,#8B5CF6); }
+  .btn-primary:active{ background:linear-gradient(135deg,#C73082,#6D3AF0); }
   .btn-logout{ background:var(--fail); }
   .btn-audit{ background:linear-gradient(135deg,#EC4899,#8B5CF6); border-radius:14px; }
   .btn-audit:active{ background:linear-gradient(135deg,#C73082,#6D3AF0); }
-  .chip-btn.filled{ background:linear-gradient(135deg,#7C4DFF,#5B2FE0); }
+  .chip-btn.filled{ background:linear-gradient(135deg,#EC4899,#8B5CF6); }
 
   .weight-chip, .ck-weight{ background:var(--primary-tint); color:var(--primary-dark); font-weight:700; }
   body.dark .weight-chip, body.dark .ck-weight{ color:#D3C6FF; }
@@ -589,6 +698,7 @@
     header.top .sub{ color:var(--ink-soft); opacity:1; }
     .menu-btn{ background:var(--surface); border:1px solid var(--border); top:28px; right:32px; box-shadow:0 4px 12px rgba(60,30,150,0.08); }
     .menu-btn span{ background:var(--ink); }
+    .menu-btn svg{ stroke:var(--ink); }
     nav.steps{
       position:fixed; top:0; left:0; bottom:0; width:250px; margin:0; border-radius:0;
       flex-direction:column; gap:6px; padding:92px 16px 24px; overflow-y:auto;
@@ -606,7 +716,8 @@
   }
 
   /* ================= Full screen on phones (safe areas) ================= */
-  html{ height:100%; -webkit-text-size-adjust:100%; }
+  html{ height:100%; -webkit-text-size-adjust:100%; overscroll-behavior:none; touch-action:pan-x pan-y; }
+  html, body{ overscroll-behavior:none; touch-action:pan-x pan-y; }
   body{ min-height:100vh; min-height:100dvh; overscroll-behavior-y:none; -webkit-tap-highlight-color:transparent; }
   @media (max-width:979px){
     header.top{ padding-top:calc(26px + env(safe-area-inset-top,0px)); padding-left:calc(20px + env(safe-area-inset-left,0px)); padding-right:calc(20px + env(safe-area-inset-right,0px)); }
@@ -707,9 +818,11 @@
   main{ padding-bottom:16px; }
   @media (min-width:980px){ body{ padding-bottom:0; } main{ padding-bottom:24px; } }
 
-  .report-item{ border-bottom:1px solid var(--border); padding-bottom:12px; }
-  .report-item:last-child{ border-bottom:none; padding-bottom:2px; }
-  .report-item button.report-row{ border-bottom:none; padding-bottom:8px; }
+  .report-item{ border-bottom:1px solid var(--border); padding:0; }
+  .report-item:first-child button.report-row{ padding-top:4px; }
+  .report-item:last-child{ border-bottom:none; }
+  .report-item:last-child button.report-row{ padding-bottom:4px; }
+  .report-item button.report-row{ border-bottom:none; padding:16px 0; }
   .pdf-file{ word-break:break-all; }
 
   /* no animation or transition anywhere: pages, cards, sheets, buttons, header just appear */
@@ -734,6 +847,22 @@
   .score-tier-btn .tier-value{ font-size:17px; }
   .modal-close-x{ background:var(--fail) !important; color:#fff !important; }
   body.dark .modal-close-x{ background:var(--fail) !important; color:#fff !important; }
+
+  /* score panel spacing */
+  .score-sheet{ padding:14px 20px 26px; }
+  .score-sheet .modal-handle{ margin:0 auto 22px; }
+  .score-sheet .modal-close-x{ top:16px; right:18px; }
+  .score-sheet .modal-title{ font-size:17px; line-height:1.3; margin:0 0 20px; padding-right:48px; }
+  .score-sheet .score-tier-row{ gap:12px; justify-content:stretch; margin:0; }
+  .score-sheet .score-tier-btn{ flex:1 1 0; width:auto; padding:13px 6px; }
+  .score-sheet .score-tier-btn .tier-value{ font-size:18px; line-height:1.2; }
+  .score-sheet .helper{ margin:12px 0 0; }
+  .score-sheet .modal-section-label{ margin:24px 0 10px; line-height:1; }
+  .score-sheet .modal-note-area{ height:52px; min-height:52px !important; padding:13px 14px; }
+  .score-sheet .btn-row{ gap:10px; margin-top:0; }
+  .score-sheet .photo-strip{ margin-top:12px; }
+  .score-sheet > .btn-row:last-child{ margin-top:28px !important; }
+  #storeError:empty{ display:none; }
 </style>
 </head>
 <body>
@@ -742,7 +871,10 @@
   <button class="menu-btn" id="menuBtn" onclick="toggleSettings()" aria-label="Settings">
     <span></span><span></span><span></span>
   </button>
-  <h1>Audit</h1>
+  <div class="hdr-row">
+    <h1 id="headerTitle">Audit</h1>
+    <button class="hdr-complete" id="hdrComplete" style="display:none" onclick="goStep('report')">Complete</button>
+  </div>
   <div class="sub" id="headerSub"></div>
 </header>
 
@@ -752,6 +884,7 @@
 <div id="modalRoot"></div>
 <div id="userModalRoot"></div>
 <div id="cropModalRoot"></div>
+<div id="timeModalRoot"></div>
 <div id="confirmModalRoot"></div>
 <div id="pdfModalRoot"></div>
 <div id="lightboxRoot"></div>
@@ -777,19 +910,19 @@ function weatherIcon(name){
   return w ? '<span class="w-ico ' + w.cls + '">' + w.svg + '</span>' : '';
 }
 function visitTimeText(a, b){
-  if(a && b) return a + ' – ' + b;
-  if(a) return 'In ' + a;
-  if(b) return 'Out ' + b;
+  if(a && b) return fmt12(a) + ' – ' + fmt12(b);
+  if(a) return 'In ' + fmt12(a);
+  if(b) return 'Out ' + fmt12(b);
   return '';
 }
 /* small summary of the visit information (shown on the Audit and Report pages) */
 function visitSummaryHTML(editable, src){
   const v = src || auditInfo;
   const chips = [];
-  if(v.date) chips.push('<span class="visit-chip">' + esc(v.date) + '</span>');
+  if(v.date) chips.push('<span class="visit-chip">' + esc(fmtDateLong(v.date)) + '</span>');
   const t = visitTimeText(v.timeIn, v.timeOut);
   if(t) chips.push('<span class="visit-chip">' + esc(t) + '</span>');
-  if(v.traffic) chips.push('<span class="visit-chip">Traffic: ' + esc(v.traffic) + '</span>');
+  if(v.traffic) chips.push('<span class="visit-chip">' + esc(v.traffic) + '</span>');
   if(v.weather) chips.push('<span class="visit-chip">' + weatherIcon(v.weather) + esc(v.weather) + '</span>');
   if(editable) chips.push('<button class="visit-edit" onclick="goStep(\'visit\')">Edit</button>');
   return chips.length ? '<div class="visit-chips">' + chips.join('') + '</div>' : '';
@@ -1135,15 +1268,22 @@ function saveAccountsToStorage(){
   catch(err){ console.warn('Could not save users:', err); }
 }
 let activeUserId = null;
+let draftAccount = null;   // a new user is only added to the list when Done is pressed
 function addAccount(){
   if(!isManager()) return;
-  const id = uid();
-  auditorAccounts.push({id, name:'', username:'', password:'', position:'', photo:''});
-  saveAccountsToStorage();
-  render();
-  openUserModal(id, true);
+  draftAccount = {id: uid(), name:'', username:'', password:'', position:'', photo:''};
+  openUserModal(draftAccount.id, true);
 }
-function updateAccount(id, field, val){ if(!isManager()) return; const a=auditorAccounts.find(a=>a.id===id); if(a) a[field]=val; saveAccountsToStorage(); }
+function findAccountForModal(id){
+  if(draftAccount && draftAccount.id === id) return draftAccount;
+  return auditorAccounts.find(a=>a.id===id);
+}
+function updateAccount(id, field, val){
+  if(!isManager()) return;
+  const a = findAccountForModal(id);
+  if(a) a[field] = val;
+  if(!(draftAccount && draftAccount.id === id)) saveAccountsToStorage();
+}
 function removeAccount(id){
   if(!isManager()) return;
   auditorAccounts = auditorAccounts.filter(a=>a.id!==id);
@@ -1158,7 +1298,23 @@ function openUserModal(id, focusName){
   renderUserModal();
   if(focusName){ const el = document.getElementById('userNameInput'); if(el) el.focus(); }
 }
+/* X / tap outside: a new user that was not finished is discarded */
 function closeUserModal(){
+  draftAccount = null;
+  activeUserId = null;
+  renderUserModal();
+  render();
+}
+/* Done: a new user is created now (only if something was filled in) */
+function doneUserModal(){
+  if(draftAccount){
+    const d = draftAccount;
+    if(d.name.trim() || d.position.trim() || d.username.trim() || d.password.trim()){
+      auditorAccounts.push(d);
+      saveAccountsToStorage();
+    }
+    draftAccount = null;
+  }
   activeUserId = null;
   renderUserModal();
   render();
@@ -1166,76 +1322,98 @@ function closeUserModal(){
 function renderUserModal(){
   const root = document.getElementById('userModalRoot');
   if(!root) return;
-  const a = activeUserId ? auditorAccounts.find(x=>x.id===activeUserId) : null;
+  const a = activeUserId ? findAccountForModal(activeUserId) : null;
   if(!a){ activeUserId = null; root.innerHTML = ''; return; }
+  const isNew = !!(draftAccount && draftAccount.id === a.id);
   root.innerHTML = `
   <div class="modal-overlay" onclick="if(event.target===this) closeUserModal()">
     <div class="modal-sheet" style="position:relative;">
       <button class="modal-close-x" aria-label="Close" onclick="closeUserModal()">${ICON_X}</button>
       <div class="modal-handle"></div>
-      <div class="modal-title">User details</div>
-      <div class="modal-sub">Changes are saved automatically.</div>
+      <div class="modal-title"${isNew ? ' style="margin-bottom:16px;"' : ''}>Account</div>
+      ${isNew ? '' : '<div class="modal-sub">Changes are saved automatically.</div>'}
       <div class="field"><label>Name</label><input type="text" id="userNameInput" value="${esc(a.name)}" oninput="updateAccount('${a.id}','name',this.value)" placeholder="Full name"></div>
       <div class="field"><label>Position</label><input type="text" value="${esc(a.position)}" oninput="updateAccount('${a.id}','position',this.value)" placeholder="e.g. Quality Controller"></div>
       <div class="field"><label>Username</label><input type="text" value="${esc(a.username)}" oninput="updateAccount('${a.id}','username',this.value)" placeholder="Username" autocapitalize="none" autocomplete="off"></div>
       <div class="field"><label>Password</label><input type="text" value="${esc(a.password)}" oninput="updateAccount('${a.id}','password',this.value)" placeholder="Password" autocapitalize="none" autocomplete="off"></div>
       <div class="btn-row" style="margin-top:6px;">
-        <button class="btn btn-primary btn-block" onclick="closeUserModal()">Done</button>
+        <button class="btn btn-primary btn-block" onclick="doneUserModal()">Done</button>
       </div>
-      <div class="btn-row">
+      ${isNew ? '' : `<div class="btn-row">
         <button class="btn btn-danger btn-block" onclick="removeAccount('${a.id}')">Remove user</button>
-      </div>
+      </div>`}
     </div>
   </div>`;
 }
 
 function starterChecklist(){
   return [
-    { id: uid(), name:'Hygiene & Cleanliness', subcategories:[
+    { id: uid(), name:'Customer Experience', subcategories:[
       { id: uid(), name:'General', items:[
-        { id: uid(), name:'Staff personal hygiene & grooming', tiers:[10,5,0], score:null, note:'' },
-        { id: uid(), name:'Handwashing stations stocked & functional', tiers:[10,5,0], score:null, note:'' },
-        { id: uid(), name:'Work surfaces & equipment clean', tiers:[10,5,0], score:null, note:'' },
-        { id: uid(), name:'Floors, walls, ceiling clean', tiers:[10,5,0], score:null, note:'' },
-        { id: uid(), name:'Waste bins covered, not overflowing', tiers:[5,3,0], score:null, note:'' },
-        { id: uid(), name:'No evidence of pests', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Greeting & eye contact with customer', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'Friendly, polite and patient attitude', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Order taken accurately, upsell attempted', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Menu & product knowledge (can explain drinks)', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Waiting time acceptable, orders called out clearly', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Complaints handled calmly and solved', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Cash handling / POS procedure followed', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Thank you & farewell to customer', tiers:[5,3,0], score:null, note:'' },
       ]}
     ]},
-    { id: uid(), name:'Product Quality & Taste', subcategories:[
+    { id: uid(), name:'Barista Bar', subcategories:[
       { id: uid(), name:'General', items:[
+        { id: uid(), name:'Bar station clean & organized', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Brewing / shaking equipment clean & functioning', tiers:[10,5,0], score:null, note:'' },
         { id: uid(), name:'Prepared per standard recipe', tiers:[10,5,0], score:null, note:'' },
         { id: uid(), name:'Correct portion / ingredient quantity', tiers:[10,5,0], score:null, note:'' },
         { id: uid(), name:'Taste matches standard', tiers:[10,5,0], score:null, note:'' },
         { id: uid(), name:'Serving temperature correct', tiers:[10,5,0], score:null, note:'' },
         { id: uid(), name:'Presentation matches standard', tiers:[10,5,0], score:null, note:'' },
-        { id: uid(), name:'Ingredients within expiry / FIFO practiced', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Ice machine clean & functioning', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Fridge / freezer temperature within range', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Cups, lids & straws stocked and covered', tiers:[5,3,0], score:null, note:'' },
       ]}
     ]},
-    { id: uid(), name:'Equipment & Temperature', subcategories:[
+    { id: uid(), name:'Environment', subcategories:[
       { id: uid(), name:'General', items:[
-        { id: uid(), name:'Fridge / freezer temperature within range', tiers:[10,5,0], score:null, note:'' },
-        { id: uid(), name:'Ice machine clean & functioning', tiers:[10,5,0], score:null, note:'' },
-        { id: uid(), name:'Brewing / shaking equipment clean & functioning', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Tables & chairs clean and wiped', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Furniture in good condition (no damage)', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'Outside seating area swept, free of litter', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Entrance & exterior clean', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'Signage & menu boards clean and correct', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'Lighting, music & temperature comfortable', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'Customer waste bins available, not overflowing', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'Restroom clean & stocked', tiers:[10,5,0], score:null, note:'' },
+      ]}
+    ]},
+    { id: uid(), name:'Hygiene & Food Safety', subcategories:[
+      { id: uid(), name:'General', items:[
+        { id: uid(), name:'Staff personal hygiene & grooming', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Uniform & ID badge worn', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'Handwashing stations stocked & functional', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Work surfaces & utensils clean', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Floors, walls, ceiling clean', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Waste bins covered, not overflowing', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'No evidence of pests', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Cleaning chemicals labelled & stored away from food', tiers:[10,5,0], score:null, note:'' },
+      ]}
+    ]},
+    { id: uid(), name:'Storage & Inventory', subcategories:[
+      { id: uid(), name:'General', items:[
+        { id: uid(), name:'Storage room organized & labelled', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Ingredients within expiry / FIFO practiced', tiers:[10,5,0], score:null, note:'' },
+        { id: uid(), name:'Items stored off the floor and covered', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'Opened items dated & labelled', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'Stock levels adequate (no out-of-stock items)', tiers:[5,3,0], score:null, note:'' },
+      ]}
+    ]},
+    { id: uid(), name:'Equipment & Safety', subcategories:[
+      { id: uid(), name:'General', items:[
         { id: uid(), name:'Thermometers calibrated & available', tiers:[5,3,0], score:null, note:'' },
         { id: uid(), name:'Equipment maintenance up to date', tiers:[5,3,0], score:null, note:'' },
-      ]}
-    ]},
-    { id: uid(), name:'Staff Service & SOP', subcategories:[
-      { id: uid(), name:'General', items:[
-        { id: uid(), name:'Greeting & eye contact with customer', tiers:[5,3,0], score:null, note:'' },
-        { id: uid(), name:'Order taken accurately, upsell attempted', tiers:[10,5,0], score:null, note:'' },
-        { id: uid(), name:'SOP steps followed during preparation', tiers:[10,5,0], score:null, note:'' },
-        { id: uid(), name:'Uniform & ID badge worn', tiers:[5,3,0], score:null, note:'' },
-        { id: uid(), name:'Cash handling / POS procedure followed', tiers:[10,5,0], score:null, note:'' },
-      ]}
-    ]},
-    { id: uid(), name:'Store Presentation', subcategories:[
-      { id: uid(), name:'General', items:[
-        { id: uid(), name:'Signage & menu boards clean and correct', tiers:[5,3,0], score:null, note:'' },
-        { id: uid(), name:'Counter & display area organized', tiers:[5,3,0], score:null, note:'' },
-        { id: uid(), name:'Seating area clean and tidy', tiers:[5,3,0], score:null, note:'' },
-        { id: uid(), name:'Storage room organized & labelled', tiers:[10,5,0], score:null, note:'' },
-        { id: uid(), name:'Exterior / entrance clean', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'Faulty equipment reported & tagged', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'POS & payment devices working', tiers:[5,3,0], score:null, note:'' },
+        { id: uid(), name:'Fire extinguisher & first-aid kit available', tiers:[10,5,0], score:null, note:'' },
       ]}
     ]},
   ];
@@ -1309,7 +1487,12 @@ function saveReportsToStorage(){
 }
 function pad2(n){ return String(n).padStart(2, '0'); }
 function fmtDate(d){ return d.getFullYear() + '/' + pad2(d.getMonth()+1) + '/' + pad2(d.getDate()); }
+/* Score display: 100.0 -> 100, 99.0 -> 99, 99.9 -> 99.9 */
+function fmtScore(n){ const v = Math.round(Number(n) * 10) / 10; return Number.isInteger(v) ? String(v) : v.toFixed(1); }
 function fmtTime(d){ return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+/* Same look as the Visit information fields: "Tue, 17th Nov 2026" and "3:42 PM" */
+function fmtDateNice(d){ return fmtDateLong(d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate())); }
+function fmtTimeNice(d){ return fmt12(pad2(d.getHours()) + ':' + pad2(d.getMinutes())); }
 
 /* reports of one store from the last N months, newest first */
 function reportsForStore(name, months){
@@ -1396,6 +1579,7 @@ function beginAudit(store){
   auditInfo.weather = '';
   auditInfo.reportId = null;
   showMissing = false;
+  auditCatId = null;
   lastSavedSignature = auditSignature();
   goStep('visit');
 }
@@ -1518,7 +1702,9 @@ function missingItems(){
   })));
   return out;
 }
-function auditIsComplete(){ return missingItems().length === 0; }
+/* TESTING MODE: set to false to require every item to be scored (or N/A) before an audit can be completed */
+const ALLOW_INCOMPLETE_FOR_TESTING = true;
+function auditIsComplete(){ return ALLOW_INCOMPLETE_FOR_TESTING || missingItems().length === 0; }
 function incompleteMessage(){
   const n = missingItems().length;
   return n + (n === 1 ? ' item still needs' : ' items still need') + ' a score or N/A.';
@@ -1526,6 +1712,8 @@ function incompleteMessage(){
 function goToMissing(){
   showMissing = true;
   step = 'audit';
+  const firstBad = checklist.find(c=>catProgress(c).done < catProgress(c).total);
+  if(firstBad) auditCatId = firstBad.id;
   render(); pageEnter();
   const first = (typeof document.querySelector === 'function') ? document.querySelector('.item-tap-row.missing') : null;
   if(first && first.scrollIntoView) first.scrollIntoView({ block:'center', behavior:'smooth' });
@@ -1584,8 +1772,24 @@ function showReportDone(){
 
 /* ---------------- RENDER: NAV ---------------- */
 function renderNav(){
+  const inAudit = (step==='visit' || step==='audit' || step==='report');
+  const titleEl = document.getElementById('headerTitle');
+  const cmpEl = document.getElementById('hdrComplete');
+  if(titleEl){
+    if(inAudit && auditInfo.store){
+      const backFn = step === 'visit' ? 'backToStore()' : (step === 'audit' ? "goStep('visit')" : "goStep('audit')");
+      titleEl.innerHTML = '<button class="hdr-back" onclick="' + backFn + '" aria-label="Back"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg></button><span class="hdr-name">' + esc(auditInfo.store) + '</span>';
+    } else {
+      titleEl.textContent = 'Audit';
+    }
+  }
+  if(cmpEl) cmpEl.style.display = (step === 'audit') ? '' : 'none';
+  const navEl = document.getElementById('stepNav');
+  if(navEl) navEl.style.display = inAudit ? 'none' : '';
+  if(inAudit){ navEl.innerHTML = ''; const subEl = document.getElementById('headerSub'); if(subEl) subEl.textContent = ''; return; }
   const steps = [['profile','Profile']];
-  if(canEditChecklist()) steps.push(['edit','Checklist'], ['manage','Manage']);
+  if(canEditChecklist()) steps.push(['manage','Administration']);
+  if(step==='edit') step = 'manage';   // Checklist now lives inside Manage
   if(!canEditChecklist() && (step==='edit' || step==='manage')) step = 'profile';
   const activeKey = (step==='visit' || step==='audit' || step==='report' || step==='review') ? 'profile' : step;   // these belong to a store opened from Profile
   const nav = document.getElementById('stepNav');
@@ -1595,7 +1799,7 @@ function renderNav(){
   const sub = document.getElementById('headerSub');
   sub.textContent = '';
 }
-function goStep(key){ step = key; if(key === 'profile') activeStoreId = null; render(); pageEnter(); window.scrollTo({top:0, behavior:'smooth'}); }
+function goStep(key){ step = key; if(key === 'profile') activeStoreId = null; if(key === 'manage') manageView = null; render(); pageEnter(); window.scrollTo({top:0, behavior:'smooth'}); }
 
 /* ---------------- RENDER: SETUP ---------------- */
 /* ---------------- RENDER: LOGIN ---------------- */
@@ -1641,7 +1845,6 @@ function renderProfile(){
   const p = currentProfile();
   const initial = ((p.name || '?').trim().charAt(0) || '?').toUpperCase();
   return `
-  <h2 class="settings-page-title">Profile</h2>
 
   <div class="card profile-card">
     <div class="profile-avatar">${p.photo ? `<img src="${p.photo}" alt="">` : `<span>${esc(initial)}</span>`}</div>
@@ -1652,7 +1855,7 @@ function renderProfile(){
   </div>
 
   <div class="card">
-    <h2 class="section-title">Report</h2>
+    <h2 class="section-title">Store</h2>
     ${stores.length ? `
       <div class="user-list">${stores.map(s=>{
         const list = reportsForStore(s.name, 5);
@@ -1661,12 +1864,11 @@ function renderProfile(){
         return `<button class="user-row" onclick="openStore('${s.id}')">
           <span class="row-main">
             <span class="row-title">${esc(s.name)}</span>
-            <span class="row-sub">${list.length ? list.length + (list.length === 1 ? ' report' : ' reports') + ' in the last 5 months' : 'No reports yet'}</span>
           </span>
-          ${last ? `<span class="mini-score" style="background:${r.bg}; color:${r.color};">${Number(last.score).toFixed(1)}</span>` : ''}
+          ${last ? `<span class="mini-score" style="background:${r.bg}; color:${r.color};">${fmtScore(last.score)}</span>` : ''}
           <span class="user-row-chevron">›</span>
         </button>`;
-      }).join('')}</div>` : `<p class="empty" style="padding:8px 0;">No stores yet. ${isManager() ? 'Add stores in the Manage tab.' : 'Ask your Admin to add stores.'}</p>`}
+      }).join('')}</div>` : `<p class="empty" style="padding:8px 0;">No stores yet. ${isManager() ? 'Add stores in the Administration tab.' : 'Ask your Admin to add stores.'}</p>`}
   </div>`;
 }
 
@@ -1682,19 +1884,18 @@ function renderStorePage(store){
     <button class="btn-audit" onclick="startAudit('${store.id}')">Audit</button>
   </div>
 
-  ${(auditInfo.store === store.name && auditInfo.reportId && auditIsComplete()) ? `<button class="btn btn-primary btn-block" style="margin-bottom:16px;" onclick="generatePDF()">Save PDF</button>` : ''}
 
   <div class="card">
     <h2 class="section-title">Last inspection</h2>
     ${last ? `<div class="info-tiles">
       <div class="info-tile">
-        <div class="info-tile-label">Time</div>
-        <div class="info-tile-value" style="font-size:17px;">${fmtDate(lastDate)}</div>
-        <div class="info-tile-sub" style="color:var(--ink-soft);">${fmtTime(lastDate)}</div>
+        <div class="info-tile-label">Date &amp; Time</div>
+        <div class="info-tile-value" style="font-weight:400;">${fmtDateNice(lastDate)}</div>
+        <div class="info-tile-sub" style="color:var(--ink-soft); font-weight:400;">${fmtTimeNice(lastDate)}</div>
       </div>
-      <div class="info-tile">
+      <div class="info-tile" style="${lr.label==='Excellent' ? 'background:linear-gradient(160deg,#E8FAF1,#FFFFFF); border-color:#CDEFDD;' : lr.label==='Needs Improvement' ? 'background:linear-gradient(160deg,#FFF6DC,#FFFFFF); border-color:#F8E2A0;' : 'background:linear-gradient(160deg,#FDE8E8,#FFFFFF); border-color:#F8C9C9;'}">
         <div class="info-tile-label">Score</div>
-        <div class="info-tile-value">${Number(last.score).toFixed(1)}</div>
+        <div class="info-tile-value">${fmtScore(last.score)}</div>
         <div class="info-tile-sub" style="color:${lr.color};">${lr.label}</div>
       </div>
     </div>` : `<p class="empty" style="padding:6px 0;">No inspection yet. Tap Audit to start one.</p>`}
@@ -1702,18 +1903,17 @@ function renderStorePage(store){
 
   <div class="card">
     <h2 class="section-title">Reports</h2>
-    ${list.length ? `<p class="helper">Tap a report to review it.</p><div class="report-list">${list.map(rep=>{
+    ${list.length ? `<div class="report-list">${list.map(rep=>{
       const d = new Date(rep.savedAt);
       const rr = ratingFor(rep.score);
       const fl = (rep.flagged || []).length, na = (rep.notAvailable || []).length;
       return `<div class="report-item"><button class="report-row" onclick="openReport('${rep.id}')">
         <div class="report-main">
-          <div class="report-date">${fmtDate(d)} ${fmtTime(d)} <span class="report-sep">|</span> <span style="color:${rr.color};">${rr.label}</span></div>
-          <div class="report-meta">Audit | ${esc(rep.auditor || 'Unknown')}</div>
-          <div class="report-meta">${fl} to improve${na ? ' · ' + na + ' not available' : ''}</div>
-          ${(() => { const vt = [visitTimeText(rep.timeIn, rep.timeOut), rep.traffic ? 'Traffic: ' + rep.traffic : '', rep.weather || ''].filter(Boolean).join(' · '); return vt ? `<div class="report-meta">${esc(vt)}</div>` : ''; })()}
+          <div class="report-date">${esc(rep.auditor || 'Unknown')}</div>
+          <div class="report-date" style="font-weight:400;">${fmtDateNice(d)}</div>
+          <div class="report-date" style="font-weight:400;">${fmtTimeNice(d)}<span class="report-sep">·</span><span style="color:${rr.color};">${rr.label}</span></div>
         </div>
-        <div class="report-badge" style="background:${rr.bg}; color:${rr.color};">${Number(rep.score).toFixed(1)}</div>
+        <div class="report-badge" style="background:${rr.bg}; color:${rr.color};">${fmtScore(rep.score)}</div>
         <span class="report-chevron">›</span>
       </button>
       </div>`;
@@ -1726,17 +1926,12 @@ function renderVisit(){
   const trafficOptions = ['Low', 'Medium', 'High'];
   const weatherOptions = ['Sunny', 'Cloudy', 'Rainy'];
   return `
-  <div class="store-head">
-    <button class="back-chip" onclick="backToStore()" aria-label="Back to store"><svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <h2 class="store-title">${esc(auditInfo.store || 'Audit')}</h2>
-  </div>
-
   <div class="card">
     <h2 class="section-title">Visit Information</h2>
-    <div class="field"><label>Date</label><input type="date" value="${esc(auditInfo.date)}" oninput="auditInfo.date=this.value; renderNav()" onchange="auditInfo.date=this.value; renderNav()"></div>
+    <div class="field"><label>Date</label><button type="button" class="time-field${auditInfo.date ? '' : ' empty'}" onclick="openDatePicker()"><span>${auditInfo.date ? fmtDateLong(auditInfo.date) : 'Select date'}</span><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button></div>
     <div class="row2">
-      <div class="field"><label>Time In</label><input type="time" value="${esc(auditInfo.timeIn)}" oninput="auditInfo.timeIn=this.value" onchange="auditInfo.timeIn=this.value"></div>
-      <div class="field"><label>Time Out</label><input type="time" value="${esc(auditInfo.timeOut)}" oninput="auditInfo.timeOut=this.value" onchange="auditInfo.timeOut=this.value"></div>
+      <div class="field"><label>Time In</label><button type="button" class="time-field${auditInfo.timeIn ? '' : ' empty'}" onclick="openTimePicker('timeIn')"><span>${auditInfo.timeIn ? fmt12(auditInfo.timeIn) : 'Select time'}</span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
+      <div class="field"><label>Time Out</label><button type="button" class="time-field${auditInfo.timeOut ? '' : ' empty'}" onclick="openTimePicker('timeOut')"><span>${auditInfo.timeOut ? fmt12(auditInfo.timeOut) : 'Select time'}</span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button></div>
     </div>
     <div class="field">
       <label>Store Traffic</label>
@@ -1751,6 +1946,177 @@ function renderVisit(){
     </div>
   </div>`;
 }
+
+/* ---------------- TIME PICKER (wheel) ---------------- */
+function fmt12(v){
+  if(!v) return '';
+  const m = /^(\d{1,2}):(\d{2})/.exec(v); if(!m) return v;
+  let h = Number(m[1]); const ap = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return h + ':' + m[2] + ' ' + ap;
+}
+let tp = null;   // { field, h (1-12), m (0-59), ap (0=AM,1=PM) }
+const TP_ROW = 44;
+function tpFromValue(v){
+  const m = /^(\d{1,2}):(\d{2})/.exec(v || '');
+  let H, M;
+  if(m){ H = Number(m[1]); M = Number(m[2]); }
+  else { const d = new Date(); H = d.getHours(); M = d.getMinutes(); }
+  return { h: (H % 12) || 12, m: M, ap: H >= 12 ? 1 : 0 };
+}
+function tpPreviewText(){ return tp.h + ':' + String(tp.m).padStart(2,'0') + ' ' + (tp.ap ? 'PM' : 'AM'); }
+function openTimePicker(field){
+  const cur = tpFromValue(auditInfo[field]);
+  tp = { field: field, h: cur.h, m: cur.m, ap: cur.ap };
+  const hours = Array.from({length:12}, (_,i)=>i+1);
+  const mins = Array.from({length:60}, (_,i)=>i);
+  const col = (id, items, fmt) => `<div class="tp-col" id="${id}" onscroll="tpScroll('${id}')"><i class="tp-sp"></i>${items.map((v,i)=>`<div class="tp-opt" onclick="tpPick('${id}',${i})">${fmt(v)}</div>`).join('')}<i class="tp-sp"></i></div>`;
+  document.getElementById('timeModalRoot').innerHTML = `
+  <div class="modal-overlay" onclick="if(event.target===this) closeTimePicker()">
+    <div class="modal-sheet" style="position:relative;">
+      <div class="modal-handle"></div>
+      <div class="tp-head">
+        <div class="modal-title">${field === 'timeIn' ? 'Time In' : 'Time Out'}</div>
+        <button class="tp-clear" onclick="tpClear()">Clear</button>
+      </div>
+      <div class="tp-preview" id="tpPreview">${tpPreviewText()}</div>
+      <div class="tp-wheels">
+        ${col('tpH', hours, v=>v)}
+        ${col('tpM', mins, v=>String(v).padStart(2,'0'))}
+        ${col('tpA', ['AM','PM'], v=>v)}
+      </div>
+      <div class="tp-actions">
+        <button class="btn btn-outline" onclick="tpNow()">Now</button>
+        <button class="btn btn-primary" onclick="tpSet()">Set Time</button>
+      </div>
+    </div>
+  </div>`;
+  tpScrollToState(false);
+}
+function tpIndex(id){ return id === 'tpH' ? tp.h - 1 : (id === 'tpM' ? tp.m : tp.ap); }
+function tpScrollToState(smooth){
+  ['tpH','tpM','tpA'].forEach(id=>{
+    const el = document.getElementById(id); if(!el) return;
+    el.scrollTo({ top: tpIndex(id) * TP_ROW, behavior: smooth ? 'smooth' : 'auto' });
+    tpMark(id);
+  });
+}
+function tpMark(id){
+  const el = document.getElementById(id); if(!el) return;
+  const idx = tpIndex(id);
+  el.querySelectorAll('.tp-opt').forEach((o,i)=>o.classList.toggle('sel', i === idx));
+}
+function tpScroll(id){
+  if(!tp) return;
+  const el = document.getElementById(id); if(!el) return;
+  const max = id === 'tpH' ? 11 : (id === 'tpM' ? 59 : 1);
+  const idx = Math.max(0, Math.min(max, Math.round(el.scrollTop / TP_ROW)));
+  if(id === 'tpH') tp.h = idx + 1; else if(id === 'tpM') tp.m = idx; else tp.ap = idx;
+  tpMark(id);
+  const pv = document.getElementById('tpPreview'); if(pv) pv.textContent = tpPreviewText();
+}
+function tpPick(id, idx){
+  const el = document.getElementById(id); if(!el) return;
+  el.scrollTo({ top: idx * TP_ROW, behavior:'smooth' });
+}
+function tpNow(){
+  const c = tpFromValue('');
+  tp.h = c.h; tp.m = c.m; tp.ap = c.ap;
+  tpScrollToState(true);
+  const pv = document.getElementById('tpPreview'); if(pv) pv.textContent = tpPreviewText();
+}
+function closeTimePicker(){ tp = null; const r = document.getElementById('timeModalRoot'); if(r) r.innerHTML = ''; }
+function tpSet(){
+  if(!tp) return;
+  const H = (tp.h % 12) + (tp.ap ? 12 : 0);
+  const val = String(H).padStart(2,'0') + ':' + String(tp.m).padStart(2,'0');
+  const field = tp.field;
+  closeTimePicker();
+  setVisitField(field, val);
+}
+function tpClear(){
+  if(!tp) return;
+  const field = tp.field;
+  closeTimePicker();
+  setVisitField(field, '');
+}
+
+
+/* ---------------- DATE PICKER (calendar) ---------------- */
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+function ymd(y, m, d){ return y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0'); }
+function parseYMD(v){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v || '');
+  return m ? { y:Number(m[1]), m:Number(m[2])-1, d:Number(m[3]) } : null;
+}
+function ordinal(n){
+  const r = n % 100;
+  if(r >= 11 && r <= 13) return n + 'th';
+  return n + (['th','st','nd','rd'][n % 10] || 'th');
+}
+function fmtDateLong(v){
+  const p = parseYMD(v); if(!p) return v || '';
+  const wd = new Date(p.y, p.m, p.d).getDay();
+  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][wd] + ', ' + ordinal(p.d) + ' ' + MONTHS_SHORT[p.m] + ' ' + p.y;
+}
+let dp = null;   // { sel:'YYYY-MM-DD', y, m }
+function openDatePicker(){
+  const cur = parseYMD(auditInfo.date) || parseYMD(todayLocal());
+  dp = { sel: ymd(cur.y, cur.m, cur.d), y: cur.y, m: cur.m };
+  document.getElementById('timeModalRoot').innerHTML = `
+  <div class="modal-overlay" onclick="if(event.target===this) closeDatePicker()">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Date</div>
+      <div id="dpBody"></div>
+      <div class="tp-actions">
+        <button class="btn btn-outline" onclick="dpToday()">Today</button>
+        <button class="btn btn-primary" onclick="dpSet()">Set Date</button>
+      </div>
+    </div>
+  </div>`;
+  dpRender();
+}
+function dpRender(){
+  const body = document.getElementById('dpBody'); if(!body || !dp) return;
+  const first = new Date(dp.y, dp.m, 1).getDay();
+  const todayStr = todayLocal();
+  const cells = [];
+  for(let i = 0; i < 42; i++){
+    const dt = new Date(dp.y, dp.m, 1 - first + i);
+    const str = ymd(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    const cls = 'dp-day' + (dt.getMonth() !== dp.m ? ' out' : '') + (str === todayStr ? ' today' : '') + (str === dp.sel ? ' sel' : '');
+    cells.push(`<button type="button" class="${cls}" onclick="dpPick('${str}')">${dt.getDate()}</button>`);
+  }
+  body.innerHTML = `
+    <div class="dp-nav">
+      <button type="button" class="dp-arrow" onclick="dpMove(-1)" aria-label="Previous month"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg></button>
+      <div class="dp-month">${MONTHS[dp.m]} ${dp.y}</div>
+      <button type="button" class="dp-arrow" onclick="dpMove(1)" aria-label="Next month"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg></button>
+    </div>
+    <div class="dp-grid">${DOW.map(d=>`<div class="dp-dow">${d}</div>`).join('')}${cells.join('')}</div>`;
+}
+function dpMove(delta){
+  const d = new Date(dp.y, dp.m + delta, 1);
+  dp.y = d.getFullYear(); dp.m = d.getMonth();
+  dpRender();
+}
+function dpPick(str){
+  const p = parseYMD(str);
+  dp.sel = str; dp.y = p.y; dp.m = p.m;
+  dpRender();
+}
+function dpToday(){ dpPick(todayLocal()); }
+function closeDatePicker(){ dp = null; const r = document.getElementById('timeModalRoot'); if(r) r.innerHTML = ''; }
+function dpSet(){
+  if(!dp) return;
+  const val = dp.sel;
+  closeDatePicker();
+  setVisitField('date', val);
+}
+
 function setVisitField(field, value){
   auditInfo[field] = value;
   const y = (typeof window.scrollY === 'number') ? window.scrollY : 0;
@@ -1813,7 +2179,7 @@ function requestDeleteReport(id){
   if(!rep) return;
   const d = new Date(rep.savedAt);
   askConfirm('Delete this report?',
-    'This permanently deletes the ' + fmtDate(d) + ' ' + fmtTime(d) + ' report for ' + rep.store + ' (score ' + Number(rep.score).toFixed(1) + '), including its photos. This cannot be undone.',
+    'This permanently deletes the ' + fmtDateNice(d) + ' ' + fmtTimeNice(d) + ' report for ' + rep.store + ' (score ' + fmtScore(rep.score) + '), including its photos. This cannot be undone.',
     'Delete report', ()=>deleteReport(id));
 }
 function deleteReport(id){
@@ -1895,7 +2261,6 @@ function renderReview(){
   <div class="card">
     <div class="result-header">
       <div>
-        <div class="result-store">${fmtDate(d)} ${fmtTime(d)}</div>
         <div class="result-meta">Audit | ${esc(rep.auditor || 'Unknown')}</div>
       </div>
       <div class="rating-badge" style="color:${rr.color}; background:${rr.bg};">${rr.label}</div>
@@ -1905,7 +2270,7 @@ function renderReview(){
       <div class="gauge-ring-wrap">
         ${gaugeSVG(rep.score)}
         <div class="gauge-center">
-          <div class="gauge-score">${Number(rep.score).toFixed(1)}<span class="gauge-pct-sign">%</span></div>
+          <div class="gauge-score">${fmtScore(rep.score)}<span class="gauge-pct-sign">%</span></div>
         </div>
       </div>
     </div>
@@ -1950,10 +2315,6 @@ function renderReview(){
   } else {
     // reports saved before full item details were kept
     html += `<div class="card"><p class="helper" style="margin:0;">Item-by-item details were not saved for this report. The areas for improvement and not-available items are shown below.</p></div>`;
-    if(fl){
-      html += `<div class="card"><h2 class="section-title">Areas for Improvement</h2>${(rep.flagged || []).map(f=>`
-        <div class="rv-item"><div class="rv-main"><div class="rv-name">${esc(f.name)}</div><div class="rv-note">${esc(f.cat)}${f.note ? ' — ' + esc(f.note) : ''}</div></div><div class="score-pill fail">${f.score}/${f.max}</div></div>`).join('')}</div>`;
-    }
     if(na){
       html += `<div class="card"><h2 class="section-title">Not Available (${na})</h2>${(rep.notAvailable || []).map(n=>`
         <div class="rv-item"><div class="rv-main"><div class="rv-name">${esc(n.name)}</div><div class="rv-note">${esc(n.cat)}${n.note ? ' — ' + esc(n.note) : ''}</div></div><div class="score-pill na">N/A</div></div>`).join('')}</div>`;
@@ -1968,33 +2329,74 @@ function renderReview(){
 }
 
 /* ---------------- RENDER: MANAGE (Admin only) ---------------- */
+let manageView = null;   // null = Manage menu | 'users' | 'stores' | 'checklist'
+function setManageView(v){ manageView = v; render(); pageEnter(); window.scrollTo({top:0, behavior:'smooth'}); }
+
+function manageHead(title){
+  return `<div class="store-head">
+    <button class="back-chip" onclick="setManageView(null)" aria-label="Back to Manage"><svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <h2 class="store-title">${title}</h2>
+  </div>`;
+}
+
 function renderManage(){
-  return `
-  <h2 class="settings-page-title">Manage</h2>
+  if(manageView === 'users') return `
+  ${manageHead('Account Management')}
 
   <div class="card">
-    <h2 class="section-title">Manage Users</h2>
-    ${auditorAccounts.length ? `<div class="user-list">${auditorAccounts.map(a=>`
+    <h2 class="section-title">Account</h2>
+    ${auditorAccounts.length ? `<div class="user-list" style="margin-bottom:0;">${auditorAccounts.map(a=>`
       <button class="user-row" onclick="openUserModal('${a.id}')">
         <span class="user-avatar">${esc((a.name||'').trim().charAt(0).toUpperCase() || '?')}</span>
         <span class="user-row-name">${esc(a.name || 'Unnamed user')}</span>
         <span class="user-row-chevron">›</span>
       </button>`).join('')}</div>` : `<p class="empty" style="padding:8px 0;">No users added yet.</p>`}
-    <button class="add-line" onclick="addAccount()">+ Add user</button>
   </div>
 
   <div class="card">
-    <h2 class="section-title">Create Store User</h2>
-    <div class="add-store-row">
-      <div class="field" style="flex:1; margin-bottom:0;"><input type="text" id="newStoreName" placeholder="Store name" onkeydown="if(event.key==='Enter'){addStore();}"></div>
-      <button class="btn btn-primary" onclick="addStore()">Add</button>
-    </div>
-    <p id="storeError" class="helper" style="color:var(--fail); margin-top:-4px;"></p>
+    <button class="btn btn-primary btn-block" onclick="addAccount()">Create Account</button>
+  </div>`;
+  if(manageView === 'stores') return `
+  ${manageHead('Stores Management')}
+
+  <div class="card">
+    <h2 class="section-title">Stores</h2>
     ${stores.length ? `<div class="store-list">${stores.map(s=>`
       <div class="store-row">
         <span class="store-row-name">${esc(s.name)}</span>
         <button class="store-remove" onclick="removeStore('${s.id}')">Remove</button>
       </div>`).join('')}</div>` : `<p class="empty" style="padding:8px 0;">No stores added yet.</p>`}
+  </div>
+
+  <div class="card">
+    <div class="add-store-row">
+      <div class="field" style="flex:1; margin-bottom:0;"><input type="text" id="newStoreName" placeholder="Store name" onkeydown="if(event.key==='Enter'){addStore();}"></div>
+      <button class="btn btn-primary" onclick="addStore()">Create</button>
+    </div>
+    <p id="storeError" class="helper" style="color:var(--fail); margin:10px 0 0;"></p>
+  </div>`;
+  if(manageView === 'checklist') return `
+  ${manageHead('Audit Checklist Setting')}
+
+  ${renderEdit()}`;
+
+  return `
+  <div class="manage-menu">
+      <button class="manage-tile" onclick="setManageView('users')">
+        <span class="manage-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.5"/><path d="M18 14.2c2.2.3 3.7 2.1 3.7 4.8"/></svg></span>
+        <span class="manage-text"><span class="manage-title">Account Management</span></span>
+        <span class="user-row-chevron">›</span>
+      </button>
+      <button class="manage-tile" onclick="setManageView('stores')">
+        <span class="manage-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9c0 1.7 1.3 3 3 3s3-1.3 3-3c0 1.7 1.3 3 3 3s3-1.3 3-3c0 1.7 1.3 3 3 3s3-1.3 3-3"/><path d="M5 12v8h14v-8"/></svg></span>
+        <span class="manage-text"><span class="manage-title">Stores Management</span></span>
+        <span class="user-row-chevron">›</span>
+      </button>
+      <button class="manage-tile" onclick="setManageView('checklist')">
+        <span class="manage-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8.5 9l1.5 1.5L13 7.5"/><path d="M8.5 15.5l1.5 1.5 3-3"/><path d="M15 9.5h2M15 16h2"/></svg></span>
+        <span class="manage-text"><span class="manage-title">Audit Checklist Setting</span></span>
+        <span class="user-row-chevron">›</span>
+      </button>
   </div>`;
 }
 
@@ -2008,15 +2410,20 @@ function renderSettings(){
   <div class="card">
     <h2 class="section-title">Profile Picture</h2>
     <div class="settings-photo-row">
-      <div class="profile-avatar settings-avatar">${p.photo ? `<img src="${p.photo}" alt="">` : `<span id="profileInitial">${esc(initial)}</span>`}</div>
-      <div class="settings-photo-actions">
-        <label class="btn btn-outline btn-sm" style="cursor:pointer;">Take a Photo
+      <div class="settings-avatar-wrap">
+        <div class="profile-avatar settings-avatar">${p.photo ? `<img src="${p.photo}" alt="">` : `<span id="profileInitial">${esc(initial)}</span>`}</div>
+        <label class="avatar-badge" aria-label="Take a photo"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.6-2.5h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
           <input type="file" accept="image/*" capture="user" style="display:none" onchange="handleProfilePhoto(event)">
         </label>
-        <label class="btn btn-outline btn-sm" style="cursor:pointer;">Choose Photo
+      </div>
+      <div class="settings-photo-actions">
+        <label class="photo-act"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.6-2.5h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg> Take Photo
+          <input type="file" accept="image/*" capture="user" style="display:none" onchange="handleProfilePhoto(event)">
+        </label>
+        <label class="photo-act"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg> Choose Photo
           <input type="file" accept="image/*" style="display:none" onchange="handleProfilePhoto(event)">
         </label>
-        ${p.photo ? `<button class="btn btn-danger btn-sm" onclick="removeProfilePhoto()">Remove Photo</button>` : ''}
+        ${p.photo ? `<button class="photo-act remove" onclick="removeProfilePhoto()">Remove Photo</button>` : ''}
       </div>
     </div>
   </div>
@@ -2071,9 +2478,9 @@ function renderEdit(){
             <button class="icon-del sm" aria-label="Delete item" onclick="removeItem('${cat.id}','${sc.id}','${it.id}')">${ICON_X}</button>
           </div>
           <div class="ck-scores">
-            <label class="ck-score full"><span>Full</span><input type="text" class="ck-input" inputmode="numeric" value="${t[0]}" oninput="updateItemTier('${cat.id}','${sc.id}','${it.id}',0,this.value)"></label>
-            <label class="ck-score partial"><span>Partial</span><input type="text" class="ck-input" inputmode="numeric" value="${t[1]}" oninput="updateItemTier('${cat.id}','${sc.id}','${it.id}',1,this.value)"></label>
-            <label class="ck-score fail"><span>Fail</span><input type="text" class="ck-input" inputmode="numeric" value="${t[2]}" oninput="updateItemTier('${cat.id}','${sc.id}','${it.id}',2,this.value)"></label>
+            <label class="ck-score full"><input type="text" class="ck-input" inputmode="numeric" value="${t[0]}" oninput="updateItemTier('${cat.id}','${sc.id}','${it.id}',0,this.value)"></label>
+            <label class="ck-score partial"><input type="text" class="ck-input" inputmode="numeric" value="${t[1]}" oninput="updateItemTier('${cat.id}','${sc.id}','${it.id}',1,this.value)"></label>
+            <label class="ck-score fail"><input type="text" class="ck-input" inputmode="numeric" value="${t[2]}" oninput="updateItemTier('${cat.id}','${sc.id}','${it.id}',2,this.value)"></label>
           </div>
         </div>`;
       });
@@ -2153,46 +2560,59 @@ function removeItem(catId, subId, itemId){ if(!canEditChecklist()) return; const
 function renderKeepScroll(){ /* lightweight, avoid full re-render on every keystroke of weight/name in edit mode */ }
 
 /* ---------------- RENDER: AUDIT ---------------- */
+let auditCatId = null;   // category tab currently open in the audit
+function catProgress(cat){
+  let total = 0, done = 0;
+  cat.subcategories.forEach(sc=>sc.items.forEach(it=>{ total++; if(isItemAnswered(it)) done++; }));
+  return { total, done };
+}
+function setAuditCat(id){
+  auditCatId = id;
+  renderAuditPartial();
+  const tab = document.querySelector('.cat-tab.active');
+  if(tab && tab.scrollIntoView) tab.scrollIntoView({ inline:'center', block:'nearest' });
+  const panel = document.querySelector('.cat-panel');
+  if(panel){
+    const y = panel.getBoundingClientRect().top + (window.pageYOffset || 0) - 80;
+    if(y < (window.pageYOffset || 0)) window.scrollTo({ top: Math.max(0, y), behavior:'smooth' });
+  }
+}
 function renderAudit(){
   const { catResults } = computeScores();
   const crMap = {}; catResults.forEach(c=>crMap[c.id]=c);
-  const isDone = isItemAnswered;
-  let totalItems = 0, reviewedItems = 0;
-  checklist.forEach(c=>c.subcategories.forEach(s=>s.items.forEach(it=>{ totalItems++; if(isDone(it)) reviewedItems++; })));
-  const progPct = totalItems ? (reviewedItems / totalItems * 100) : 0;
+  if(!checklist.some(c=>c.id === auditCatId)) auditCatId = checklist.length ? checklist[0].id : null;
+  const activeIdx = checklist.findIndex(c=>c.id === auditCatId);
+  const cat = checklist[activeIdx];
+
   let html = `
-  <div class="store-head">
-    <button class="back-chip" onclick="goStep('visit')" aria-label="Edit visit information"><svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <h2 class="store-title">${esc(auditInfo.store || 'Audit')}</h2>
-  </div>
   ${visitSummaryHTML(true)}
-  <div class="card">
-    <div class="progress-head">
-      <h2 class="section-title" style="margin:0;">Score Each Item</h2>
-      <span class="progress-count">${reviewedItems}/${totalItems}</span>
-    </div>
-    <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${progPct}%; background:var(--primary);"></div></div>
+  <div class="cat-tabs">
+    ${checklist.map(c=>{
+      const pr = catProgress(c);
+      const complete = pr.total > 0 && pr.done === pr.total;
+      const hasMissing = showMissing && pr.done < pr.total;
+      return `<button class="cat-tab${c.id === auditCatId ? ' active' : ''}${complete ? ' done' : ''}${hasMissing ? ' has-missing' : ''}" onclick="setAuditCat('${c.id}')">${esc(c.name)}${complete ? '<span class="tab-count">✓</span>' : ''}</button>`;
+    }).join('')}
   </div>`;
-  checklist.forEach(cat=>{
+
+  if(cat){
     const cr = crMap[cat.id] || {pct:100, weight:0};
-    let catTotal = 0, catDone = 0;
-    cat.subcategories.forEach(sc=>sc.items.forEach(it=>{ catTotal++; if(isDone(it)) catDone++; }));
-    html += `<div class="card">
+    const pr = catProgress(cat);
+    const solo = cat.subcategories.length === 1;
+    html += `<div class="card cat-panel">
       <div class="cat-header">
-        <div>
-          <div class="cat-title">${esc(cat.name)}</div>
-        </div>
+        <div class="cat-title">${esc(cat.name)}</div>
         <div class="weight-chip">${cr.pct.toFixed(0)}%</div>
       </div>`;
     cat.subcategories.forEach(sc=>{
-      html += `<div class="subcat"><div class="subcat-name">${esc(sc.name)}</div>`;
+      html += `<div class="subcat${solo ? ' solo' : ''}">${solo ? '' : `<div class="subcat-name">${esc(sc.name)}</div>`}`;
       sc.items.forEach(it=>{
         const t = itemTiers(it);
         const photos = it.photos || [];
         const scored = it.score !== null && it.score !== undefined;
         const answered = isItemAnswered(it);
         const isMissing = !answered && showMissing;
-        let pillClass = isMissing ? 'missing' : 'unscored', pillText = isMissing ? 'Required' : 'Select';
+        let pillClass = isMissing ? 'missing' : 'unscored', pillText = isMissing ? 'Required' : '-';
         if(it.na){
           pillClass = 'na'; pillText = 'N/A';
         } else if(scored){
@@ -2214,8 +2634,8 @@ function renderAudit(){
       html += `</div>`;
     });
     html += `</div>`;
-  });
-  html += `<div class="btn-row"><button class="btn btn-primary btn-block" onclick="goStep('report')">Complete</button></div>`;
+  }
+
   return html;
 }
 
@@ -2241,7 +2661,7 @@ function renderModal(){
   const tierLabels = ['Full','Partial','Fail'];
   root.innerHTML = `
   <div class="modal-overlay" onclick="if(event.target===this) closeScoreModal()">
-    <div class="modal-sheet" style="position:relative;">
+    <div class="modal-sheet score-sheet" style="position:relative;">
       <button class="modal-close-x" aria-label="Close" onclick="closeScoreModal()">${ICON_X}</button>
       <div class="modal-handle"></div>
       <div class="modal-title">${esc(it.name)}</div>
@@ -2337,7 +2757,7 @@ function renderReport(){
     <div class="result-header">
       <div>
         <div class="result-store">${esc(auditInfo.store || 'Untitled Store')}</div>
-        <div class="result-meta">${esc(auditInfo.auditor || '—')} · ${esc(auditInfo.date)}</div>
+        <div class="result-meta">${esc(auditInfo.auditor || '—')}</div>
       </div>
       <div class="rating-badge" style="color:${rating.color}; background:${rating.bg};">${rating.label}</div>
     </div>
@@ -2346,7 +2766,7 @@ function renderReport(){
       <div class="gauge-ring-wrap">
         ${gaugeSVG(overall)}
         <div class="gauge-center">
-          <div class="gauge-score">${overall.toFixed(1)}<span class="gauge-pct-sign">%</span></div>
+          <div class="gauge-score">${fmtScore(overall)}<span class="gauge-pct-sign">%</span></div>
         </div>
       </div>
     </div>
@@ -2366,17 +2786,6 @@ function renderReport(){
       </div>`).join('')}
   </div>
 
-  <div class="card">
-    <h2 class="section-title">Areas for Improvement</h2>
-    ${flagged.length===0 ? `<div class="empty">No areas for improvement. All items met the standard.</div>` :
-      flagged.map(f=>`
-        <div class="flag-item">
-          <div class="flag-top"><span>${esc(f.name)}</span><span class="flag-score">${f.score}/${f.max}</span></div>
-          <div class="flag-note">${esc(f.cat)}${f.note? ' — '+esc(f.note) : ''}</div>
-          ${f.photos.length ? `<div class="photo-strip">${f.photos.map(p=>`<div class="photo-thumb readonly"><img src="${p.dataUrl}"></div>`).join('')}</div>` : ''}
-        </div>`).join('')}
-  </div>
-
   ${notAvailable.length>0 ? `<div class="card">
     <h2 class="section-title">Not Available (${notAvailable.length})</h2>
     ${notAvailable.map(n=>`
@@ -2387,7 +2796,7 @@ function renderReport(){
   </div>` : ''}
 
   <p id="saveStatus" class="helper" style="text-align:center; min-height:16px; margin:0 0 8px;"></p>
-  <button class="btn btn-primary btn-block" ${missing.length ? 'disabled' : ''} onclick="saveReportAndOpenStore()">Complete</button>
+  <button class="btn btn-primary btn-block" ${(missing.length && !ALLOW_INCOMPLETE_FOR_TESTING) ? 'disabled' : ''} onclick="saveReportAndOpenStore()">Complete</button>
   <div class="btn-row">
     <button class="btn btn-outline btn-block" onclick="goStep('audit')">Back to Audit</button>
   </div>`;
@@ -2788,13 +3197,19 @@ function render(){
   const menuBtn = document.getElementById('menuBtn');
 
   if(!loggedInUser){
+    const t0 = document.getElementById('headerTitle'); if(t0) t0.textContent = 'Audit'; const c0 = document.getElementById('hdrComplete'); if(c0) c0.style.display = 'none';
+    nav.style.display = '';
     nav.innerHTML = '';
     sub.textContent = '';
     content.innerHTML = renderLogin();
     if(menuBtn) menuBtn.style.display = 'none';
     return;
   }
-  if(menuBtn) menuBtn.style.display = '';
+  // Hide the 3-line menu button while auditing (store, checklist, report)
+  const auditing = (step==='visit' || step==='audit' || step==='report');
+  if(menuBtn) menuBtn.style.display = auditing ? 'none' : '';
+  const hdrRow = document.querySelector('.hdr-row');
+  if(hdrRow) hdrRow.style.paddingRight = auditing ? '0' : '';
 
   renderNav();
   if(step==='visit') content.innerHTML = renderVisit();
@@ -2807,14 +3222,9 @@ function render(){
   else if(step==='profile') content.innerHTML = renderProfile();
 
   if(menuBtn){
-    if(step === 'settings'){
-      menuBtn.innerHTML = '←';
-      menuBtn.style.fontSize = '18px';
-      menuBtn.style.color = '#fff';
-    } else {
-      menuBtn.innerHTML = '<span></span><span></span><span></span>';
-      menuBtn.style.fontSize = '';
-    }
+    menuBtn.innerHTML = '<span></span><span></span><span></span>';
+    menuBtn.style.fontSize = '';
+    menuBtn.style.color = '';
   }
 }
 loadAccountsFromStorage();
@@ -2895,7 +3305,7 @@ loadSession();
       const start=performance.now();
       (function tick(now){
         const p=Math.min(1,(now-start)/900), e=1-Math.pow(1-p,3);
-        el.firstChild.nodeValue=(target*e).toFixed(1);
+        el.firstChild.nodeValue = p<1 ? (target*e).toFixed(1) : fmtScore(target);
         if(p<1) requestAnimationFrame(tick);
       })(start);
     });
@@ -2935,6 +3345,49 @@ loadSession();
     const go=()=>{ const el=document.documentElement; if(el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen({navigationUI:'hide'}).catch(()=>{}); document.removeEventListener('click',go,true); };
     document.addEventListener('click',go,true);
   }
+})();
+</script>
+<script>
+/* ============ No zoom + no elastic over-scroll (phone) ============ */
+(function(){
+  ['gesturestart','gesturechange','gestureend'].forEach(function(ev){
+    document.addEventListener(ev, function(e){ e.preventDefault(); }, {passive:false});
+  });
+  document.addEventListener('touchmove', function(e){
+    if(e.touches && e.touches.length > 1) e.preventDefault();   // two-finger pinch
+  }, {passive:false});
+  var lastEnd = 0;
+  document.addEventListener('touchend', function(e){
+    var now = Date.now();
+    if(now - lastEnd < 300){ var t = e.target; if(!(t && t.closest && t.closest('input,textarea,select'))) e.preventDefault(); }   // double-tap zoom
+    lastEnd = now;
+  }, {passive:false});
+
+  // stop the page from stretching past the top/bottom (that is the big empty gap)
+  var startY = 0;
+  function scroller(el){
+    while(el && el !== document.body && el !== document.documentElement){
+      var cs = getComputedStyle(el);
+      if((cs.overflowY === 'auto' || cs.overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 1) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+  document.addEventListener('touchstart', function(e){ if(e.touches.length === 1) startY = e.touches[0].clientY; }, {passive:true});
+  document.addEventListener('touchmove', function(e){
+    if(e.touches.length !== 1) return;
+    var dy = e.touches[0].clientY - startY;          // >0 finger moving down (pulling top)
+    var sc = scroller(e.target);
+    if(sc){
+      var atTop = sc.scrollTop <= 0, atBottom = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 1;
+      if((dy > 0 && atTop) || (dy < 0 && atBottom)) e.preventDefault();
+      return;
+    }
+    var de = document.documentElement;
+    var y = window.pageYOffset || de.scrollTop || 0;
+    var maxY = de.scrollHeight - window.innerHeight;
+    if((dy > 0 && y <= 0) || (dy < 0 && y >= maxY - 1)) e.preventDefault();
+  }, {passive:false});
 })();
 </script>
 </body>
